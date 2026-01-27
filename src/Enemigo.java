@@ -1,7 +1,7 @@
 public class Enemigo extends Jugador {
 
-    public Enemigo(int vida, int potenciaAtaque, int fila, int columna) {
-        super(vida, potenciaAtaque, fila, columna);
+    public Enemigo(int fila, int columna) {
+        super(100, 25, fila, columna);
 
     }
 

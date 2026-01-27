@@ -1,7 +1,7 @@
 public class Principal extends Jugador{
 
-    public Principal(int vida, int potenciaAtaque, int fila, int columna) {
-        super(vida, potenciaAtaque, fila, columna);
+    public Principal(int fila, int columna) {
+        super(200, 50, fila, columna);
     }
 
    
