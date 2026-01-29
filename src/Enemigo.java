@@ -1,10 +1,17 @@
 public class Enemigo extends Jugador {
 
     public Enemigo(int fila, int columna) {
-        super(100, 25, fila, columna);
+        super(100, 25, fila, columna, ":p");
 
     }
 
+    public boolean isVivo() { 
+        return estaVivo; 
+
+    } public void setVivo(boolean vivo) { 
+        this.estaVivo = true; 
+    }
+   
     public void perseguirJugador(Principal jugPrin, Jugador[][] tablero) {
         int newFila = fila;
         int newColumna = columna;

@@ -1,4 +1,4 @@
-public class App {
+public class Roguelike {
     public static void main(String[] args) throws Exception {
         Jugador[][] tablero = ControlTablero.crearTablero(20, 20);
         Principal principal = new Principal(5, 5);
