@@ -182,16 +182,16 @@ public class ControlTablero {
 
         for (int i = 0; i < cantidad; i++) {
 
-            int f, c;
+            int newFila, newColumna;
 
             do {
-                f = (int) (Math.random() * filas);
-                c = (int) (Math.random() * columnas);
-            } while (tablero.get(f).get(c) != null);
+                newFila = (int) (Math.random() * filas);
+                newColumna = (int) (Math.random() * columnas);
+            } while (tablero.get(newFila).get(newColumna) != null);
 
-            Principal p = new Principal(f, c);
-            tablero.get(f).set(c, p);
-            lista.add(p);
+            Principal principal = new Principal(newFila, newColumna);
+            tablero.get(newFila).set(newColumna, principal);
+            lista.add(principal);
         }
 
         return lista;
@@ -205,16 +205,16 @@ public class ControlTablero {
 
         for (int i = 0; i < cantidad; i++) {
 
-            int f, c;
+            int newFila, newColumna;
 
             do {
-                f = (int) (Math.random() * filas);
-                c = (int) (Math.random() * columnas);
-            } while (tablero.get(f).get(c) != null);
+                newFila = (int) (Math.random() * filas);
+                newColumna = (int) (Math.random() * columnas);
+            } while (tablero.get(newFila).get(newColumna) != null);
 
-            Enemigo e = new Enemigo(f, c);
-            tablero.get(f).set(c, e);
-            lista.add(e);
+            Enemigo enemigo = new Enemigo(newFila, newColumna);
+            tablero.get(newFila).set(newColumna, enemigo);
+            lista.add(enemigo);
         }
 
         return lista;

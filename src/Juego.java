@@ -7,8 +7,8 @@ public class Juego {
         ArrayList<ArrayList<Jugador>> tablero = ControlTablero.crearTablero(20, 20);
 
         
-        int numPrincipales = (int)(Math.random() * 3) + 1; 
-        int numEnemigos = (int)(Math.random() * 10) + 5;  
+        int numPrincipales = (int)(Math.random() * 3) + 5; 
+        int numEnemigos = (int)(Math.random() * 3) + 5;  
         
         ArrayList<Principal> principal = ControlTablero.crearPrincipalesAleatorios(tablero, numPrincipales);
         ArrayList<Enemigo> enemigos = ControlTablero.crearEnemigosAleatorios(tablero, numEnemigos);
