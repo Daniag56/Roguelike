@@ -6,17 +6,13 @@ public class Juego {
 
         ArrayList<ArrayList<Jugador>> tablero = ControlTablero.crearTablero(20, 20);
 
-        Principal principal = new Principal(5, 5);
-        ControlTablero.introducirJugador(tablero, principal);
-
-        ArrayList<Enemigo> enemigos = new ArrayList<>();
-        enemigos.add(new Enemigo(1, 1));
-        enemigos.add(new Enemigo(3, 3));
-        enemigos.add(new Enemigo(5, 5));
-
-        for (Enemigo enemigo : enemigos) {
-            ControlTablero.introducirJugador(tablero, enemigo);
-        }
+        
+        int numPrincipales = (int)(Math.random() * 3) + 1; 
+        int numEnemigos = (int)(Math.random() * 10) + 5;  
+        
+        ArrayList<Principal> principal = ControlTablero.crearPrincipalesAleatorios(tablero, numPrincipales);
+        ArrayList<Enemigo> enemigos = ControlTablero.crearEnemigosAleatorios(tablero, numEnemigos);
+        
         ControlTablero.generarObstaculos(tablero, 5);
         ControlTablero.perseguirsinParar(tablero, principal, enemigos);
     }

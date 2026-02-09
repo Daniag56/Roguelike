@@ -43,12 +43,9 @@ public class ControlTablero {
      * Muestra el tablero por consola
      */
     public static void mostrarTablero(ArrayList<ArrayList<Jugador>> tablero) {
-        System.out.println("------------------------------");
-        System.out.println("      THE DUCK SLAYER");
-        System.out.println("------------------------------");
 
-        System.out.print("\033[H\033[2J");
-        
+        System.out.print("\u001b[H\u001b[2J");
+        System.out.flush();
 
         for (int i = 0; i < tablero.size(); i++) {
             for (int j = 0; j < tablero.get(i).size(); j++) {
@@ -61,23 +58,30 @@ public class ControlTablero {
             }
             System.out.println();
         }
-
     }
 
     /**
      * Movimiento continuo del jugador y enemigos
      */
-    public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero,
-            Principal jugPrin,
+    public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero, ArrayList<Principal> jugadores,
             ArrayList<Enemigo> enemigos) {
 
-        while (jugPrin.getVida() > 0 || comprobadorEnemigosvivos(enemigos)) {
+        Principal jugPrin = jugadores.get(0);
+
+        while (jugPrin.getVida() > 0 && comprobadorEnemigosvivos(enemigos)) {
 
             int newFila = jugPrin.getFila() + (int) (Math.random() * 3) - 1;
             int newColumna = jugPrin.getColumna() + (int) (Math.random() * 3) - 1;
 
-            newFila = Math.max(0, Math.min(newFila, tablero.size() - 1));
-            newColumna = Math.max(0, Math.min(newColumna, tablero.get(0).size() - 1));
+            if (newFila < 0)
+                newFila = 0;
+            else if (newFila >= tablero.size())
+                newFila = tablero.size() - 1;
+
+            if (newColumna < 0)
+                newColumna = 0;
+            else if (newColumna >= tablero.get(0).size())
+                newColumna = tablero.get(0).size() - 1;
 
             mover(tablero, jugPrin, newFila, newColumna);
 
@@ -125,13 +129,11 @@ public class ControlTablero {
         boolean ganar = Math.random() < 0.5;
 
         if (ganar) {
-            System.out.println("Ganan los buenos!");
             enemigo.setVida(0);
             enemigo.setEstaVivo(false);
             tablero.get(enemigo.getFila()).set(enemigo.getColumna(), null);
             return true;
         } else {
-            System.out.println("Ganan los malos!");
             jugPrincipal.setVida(0);
             jugPrincipal.setEstaVivo(false);
             return false;
@@ -150,6 +152,9 @@ public class ControlTablero {
         return false;
     }
 
+    /**
+     * Genera obstáculos aleatorios
+     */
     public static void generarObstaculos(ArrayList<ArrayList<Jugador>> tablero, int cantidad) {
 
         int filas = tablero.size();
@@ -167,6 +172,52 @@ public class ControlTablero {
             Obstaculo obstacule = new Obstaculo(newFila, newColumna);
             tablero.get(newFila).set(newColumna, obstacule);
         }
+    }
+
+    public static ArrayList<Principal> crearPrincipalesAleatorios(ArrayList<ArrayList<Jugador>> tablero, int cantidad) {
+        ArrayList<Principal> lista = new ArrayList<>();
+
+        int filas = tablero.size();
+        int columnas = tablero.get(0).size();
+
+        for (int i = 0; i < cantidad; i++) {
+
+            int f, c;
+
+            do {
+                f = (int) (Math.random() * filas);
+                c = (int) (Math.random() * columnas);
+            } while (tablero.get(f).get(c) != null);
+
+            Principal p = new Principal(f, c);
+            tablero.get(f).set(c, p);
+            lista.add(p);
+        }
+
+        return lista;
+    }
+
+    public static ArrayList<Enemigo> crearEnemigosAleatorios(ArrayList<ArrayList<Jugador>> tablero, int cantidad) {
+        ArrayList<Enemigo> lista = new ArrayList<>();
+
+        int filas = tablero.size();
+        int columnas = tablero.get(0).size();
+
+        for (int i = 0; i < cantidad; i++) {
+
+            int f, c;
+
+            do {
+                f = (int) (Math.random() * filas);
+                c = (int) (Math.random() * columnas);
+            } while (tablero.get(f).get(c) != null);
+
+            Enemigo e = new Enemigo(f, c);
+            tablero.get(f).set(c, e);
+            lista.add(e);
+        }
+
+        return lista;
     }
 
 }
