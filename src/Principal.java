@@ -1,15 +1,16 @@
-public class Principal extends Jugador{
+public class Principal extends Jugador {
 
     public Principal(int fila, int columna) {
-        super(5000000, 50, fila, columna, "A");
+        super(fila, columna, "\u001B[95m A \u001B[0m");
     }
 
-    public boolean isVivo() { 
-        return estaVivo; 
+    public boolean isVivo() {
+        return estaVivo;
 
-    } public void setVivo(boolean vivo) { 
-        this.estaVivo = true; 
     }
-   
+
+    public void setVivo(boolean vivo) {
+        this.estaVivo = true;
+    }
 
 }

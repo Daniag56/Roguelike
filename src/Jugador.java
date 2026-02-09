@@ -1,21 +1,16 @@
 public class Jugador {
-    int vida;
     String repJug;
-    int vidaRegenerada;
-    int potenciaAtaque;
     int fila;
     int columna;
     protected boolean estaVivo = true;
 
-    public Jugador(int vida, int potenciaAtaque, int fila, int columna, String repJug) {
-        this.vida = vida;
-        this.potenciaAtaque = potenciaAtaque;
+    public Jugador(int fila, int columna, String repJug) {
         this.fila = fila;
-        this.columna = columna; 
+        this.columna = columna;
         this.repJug = repJug;
         this.estaVivo = true;
     }
- 
+
     public String getRepJug() {
         return repJug;
     }
@@ -24,17 +19,6 @@ public class Jugador {
         this.repJug = repJug;
     }
 
-    public int getVidaRegenerada() {
-        return vidaRegenerada;
-    }
-
-    public void setVidaRegenerada(int vidaRegenerada) {
-        this.vidaRegenerada = vidaRegenerada;
-    }
-
-    public int getVida() {
-        return vida;
-    }
     public int getFila() {
         return fila;
     }
@@ -49,18 +33,6 @@ public class Jugador {
 
     public void setColumna(int columna) {
         this.columna = columna;
-    }
-
-    public void setVida(int vida) {
-        this.vida = vida;
-    }
-
-    public int getPotenciaAtaque() {
-        return potenciaAtaque;
-    }
-
-    public void setPotenciaAtaque(int potenciaAtaque) {
-        this.potenciaAtaque = potenciaAtaque;
     }
 
     public void moverJugador(int newFila, int newColumna) {

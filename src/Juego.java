@@ -12,8 +12,6 @@ public class Juego {
         
         ArrayList<Principal> principal = ControlTablero.crearPrincipalesAleatorios(tablero, numPrincipales);
         ArrayList<Enemigo> enemigos = ControlTablero.crearEnemigosAleatorios(tablero, numEnemigos);
-        
-        ControlTablero.generarObstaculos(tablero, 5);
         ControlTablero.perseguirsinParar(tablero, principal, enemigos);
     }
 }

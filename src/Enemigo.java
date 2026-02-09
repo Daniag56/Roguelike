@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public class Enemigo extends Jugador {
 
     public Enemigo(int fila, int columna) {
-        super(100, 25, fila, columna, ":p");
+        super(fila, columna, "\u001B[96m :p \u001B[0m");
     }
 
     public boolean isVivo() {
