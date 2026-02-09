@@ -79,81 +79,77 @@ public class ControlTablero {
      * @param jugadores
      * @param enemigos
      */
-    public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero, ArrayList<Principal> jugadores,
-            ArrayList<Enemigo> enemigos) {
+   public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero, ArrayList<Principal> jugadores,
+        ArrayList<Enemigo> enemigos) {
 
-        while (comprobadorEnemigosvivos(enemigos) && comprobadorJugadoresPrinvivos(jugadores)) {
+    while (comprobadorEnemigosvivos(enemigos) && comprobadorJugadoresPrinvivos(jugadores)) {
 
-            for (Principal prin : jugadores) {
-                if (!prin.isVivo())
-                    continue;
+        for (Principal prin : jugadores) {
+            if (prin.isVivo()) {
 
                 int newFila = prin.getFila() + (int) (Math.random() * 3) - 1;
                 int newColumna = prin.getColumna() + (int) (Math.random() * 3) - 1;
 
-                if (newFila < 0)
-                    newFila = 0;
-                else if (newFila >= tablero.size())
-                    newFila = tablero.size() - 1;
+                if (newFila < 0) newFila = 0;
+                else if (newFila >= tablero.size()) newFila = tablero.size() - 1;
 
-                if (newColumna < 0)
-                    newColumna = 0;
-                else if (newColumna >= tablero.get(0).size())
-                    newColumna = tablero.get(0).size() - 1;
+                if (newColumna < 0) newColumna = 0;
+                else if (newColumna >= tablero.get(0).size()) newColumna = tablero.get(0).size() - 1;
 
                 mover(tablero, prin, newFila, newColumna);
             }
+        }
 
-            for (int i = 0; i < enemigos.size(); i++) {
-                Enemigo enemigo = enemigos.get(i);
+        for (int i = 0; i < enemigos.size(); i++) {
+            Enemigo enemigo = enemigos.get(i);
 
-                if (!enemigo.isVivo()) {
-                    enemigos.remove(i);
-                    i--;
-                    continue;
-                }
+            if (enemigo.isVivo()) {
 
                 Principal objetivo = null;
                 for (Principal p : jugadores) {
-                    if (p.isVivo()) {
+                    if (p.isVivo() && objetivo == null) {
                         objetivo = p;
-                        break;
                     }
                 }
 
-                if (objetivo == null)
-                    break;
+                if (objetivo != null) {
 
-                enemigo.perseguirJugador(objetivo, tablero);
+                    enemigo.perseguirJugador(objetivo, tablero);
 
-                int newFila = enemigo.getFila();
-                int newColumna = enemigo.getColumna();
+                    int newFila = enemigo.getFila();
+                    int newColumna = enemigo.getColumna();
 
-                Principal jug = null;
+                    Principal jug = null;
 
-                if (newFila > 0 && tablero.get(newFila - 1).get(newColumna) instanceof Principal)
-                    jug = (Principal) tablero.get(newFila - 1).get(newColumna);
-                else if (newFila < tablero.size() - 1 && tablero.get(newFila + 1).get(newColumna) instanceof Principal)
-                    jug = (Principal) tablero.get(newFila + 1).get(newColumna);
-                else if (newColumna > 0 && tablero.get(newFila).get(newColumna - 1) instanceof Principal)
-                    jug = (Principal) tablero.get(newFila).get(newColumna - 1);
-                else if (newColumna < tablero.get(0).size() - 1
-                        && tablero.get(newFila).get(newColumna + 1) instanceof Principal)
-                    jug = (Principal) tablero.get(newFila).get(newColumna + 1);
+                    if (newFila > 0 && tablero.get(newFila - 1).get(newColumna) instanceof Principal)
+                        jug = (Principal) tablero.get(newFila - 1).get(newColumna);
+                    else if (newFila < tablero.size() - 1 && tablero.get(newFila + 1).get(newColumna) instanceof Principal)
+                        jug = (Principal) tablero.get(newFila + 1).get(newColumna);
+                    else if (newColumna > 0 && tablero.get(newFila).get(newColumna - 1) instanceof Principal)
+                        jug = (Principal) tablero.get(newFila).get(newColumna - 1);
+                    else if (newColumna < tablero.get(0).size() - 1 && tablero.get(newFila).get(newColumna + 1) instanceof Principal)
+                        jug = (Principal) tablero.get(newFila).get(newColumna + 1);
 
-                if (jug != null) {
-                    combate(tablero, jug, enemigo);
+                    if (jug != null) {
+                        combate(tablero, jug, enemigo);
+                    }
+
                 }
-            }
 
-            mostrarTablero(tablero);
-
-            try {
-                Thread.sleep(500);
-            } catch (Exception e) {
+            } else {
+                enemigos.remove(i);
+                i--;
             }
         }
+
+        mostrarTablero(tablero);
+
+        try {
+            Thread.sleep(500);
+        } catch (Exception e) {}
     }
+}
+
 
     /**
      * Combate entre jugador y enemigo
