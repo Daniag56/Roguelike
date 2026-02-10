@@ -1,7 +1,7 @@
 public class Principal extends Jugador {
 
     public Principal(int fila, int columna) {
-        super(fila, columna, "\u001B[95m A \u001B[0m");
+        super(fila, columna, "\u001B[95m █ \u001B[0m");
     }
 
     public boolean isVivo() {
