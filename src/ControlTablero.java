@@ -40,7 +40,13 @@ public class ControlTablero {
      */
     public static void mover(ArrayList<ArrayList<Jugador>> tablero, Jugador jugPrin, int newFila, int newColumna) {
 
-        if (tablero.get(newFila).get(newColumna) != null) {
+        Jugador destino = tablero.get(newFila).get(newColumna);
+
+        if (destino != null && destino instanceof Obstaculo) {
+            return;
+        }
+
+        if (destino != null) {
             return;
         }
 
@@ -79,77 +85,83 @@ public class ControlTablero {
      * @param jugadores
      * @param enemigos
      */
-   public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero, ArrayList<Principal> jugadores,
-        ArrayList<Enemigo> enemigos) {
+    public static void perseguirsinParar(ArrayList<ArrayList<Jugador>> tablero, ArrayList<Principal> jugadores,
+            ArrayList<Enemigo> enemigos) {
 
-    while (comprobadorEnemigosvivos(enemigos) && comprobadorJugadoresPrinvivos(jugadores)) {
+        while (comprobadorEnemigosvivos(enemigos) && comprobadorJugadoresPrinvivos(jugadores)) {
 
-        for (Principal prin : jugadores) {
-            if (prin.isVivo()) {
+            for (Principal prin : jugadores) {
+                if (prin.isVivo()) {
 
-                int newFila = prin.getFila() + (int) (Math.random() * 3) - 1;
-                int newColumna = prin.getColumna() + (int) (Math.random() * 3) - 1;
+                    int newFila = prin.getFila() + (int) (Math.random() * 3) - 1;
+                    int newColumna = prin.getColumna() + (int) (Math.random() * 3) - 1;
 
-                if (newFila < 0) newFila = 0;
-                else if (newFila >= tablero.size()) newFila = tablero.size() - 1;
+                    if (newFila < 0)
+                        newFila = 0;
+                    else if (newFila >= tablero.size())
+                        newFila = tablero.size() - 1;
 
-                if (newColumna < 0) newColumna = 0;
-                else if (newColumna >= tablero.get(0).size()) newColumna = tablero.get(0).size() - 1;
+                    if (newColumna < 0)
+                        newColumna = 0;
+                    else if (newColumna >= tablero.get(0).size())
+                        newColumna = tablero.get(0).size() - 1;
 
-                mover(tablero, prin, newFila, newColumna);
-            }
-        }
-
-        for (int i = 0; i < enemigos.size(); i++) {
-            Enemigo enemigo = enemigos.get(i);
-
-            if (enemigo.isVivo()) {
-
-                Principal objetivo = null;
-                for (Principal p : jugadores) {
-                    if (p.isVivo() && objetivo == null) {
-                        objetivo = p;
-                    }
+                    mover(tablero, prin, newFila, newColumna);
                 }
+            }
 
-                if (objetivo != null) {
+            for (int i = 0; i < enemigos.size(); i++) {
+                Enemigo enemigo = enemigos.get(i);
 
-                    enemigo.perseguirJugador(objetivo, tablero);
+                if (enemigo.isVivo()) {
 
-                    int newFila = enemigo.getFila();
-                    int newColumna = enemigo.getColumna();
-
-                    Principal jug = null;
-
-                    if (newFila > 0 && tablero.get(newFila - 1).get(newColumna) instanceof Principal)
-                        jug = (Principal) tablero.get(newFila - 1).get(newColumna);
-                    else if (newFila < tablero.size() - 1 && tablero.get(newFila + 1).get(newColumna) instanceof Principal)
-                        jug = (Principal) tablero.get(newFila + 1).get(newColumna);
-                    else if (newColumna > 0 && tablero.get(newFila).get(newColumna - 1) instanceof Principal)
-                        jug = (Principal) tablero.get(newFila).get(newColumna - 1);
-                    else if (newColumna < tablero.get(0).size() - 1 && tablero.get(newFila).get(newColumna + 1) instanceof Principal)
-                        jug = (Principal) tablero.get(newFila).get(newColumna + 1);
-
-                    if (jug != null) {
-                        combate(tablero, jug, enemigo);
+                    Principal objetivo = null;
+                    for (Principal p : jugadores) {
+                        if (p.isVivo() && objetivo == null) {
+                            objetivo = p;
+                        }
                     }
 
-                }
+                    if (objetivo != null) {
 
-            } else {
-                enemigos.remove(i);
-                i--;
+                        enemigo.perseguirJugador(objetivo, tablero);
+
+                        int newFila = enemigo.getFila();
+                        int newColumna = enemigo.getColumna();
+
+                        Principal jug = null;
+
+                        if (newFila > 0 && tablero.get(newFila - 1).get(newColumna) instanceof Principal)
+                            jug = (Principal) tablero.get(newFila - 1).get(newColumna);
+                        else if (newFila < tablero.size() - 1
+                                && tablero.get(newFila + 1).get(newColumna) instanceof Principal)
+                            jug = (Principal) tablero.get(newFila + 1).get(newColumna);
+                        else if (newColumna > 0 && tablero.get(newFila).get(newColumna - 1) instanceof Principal)
+                            jug = (Principal) tablero.get(newFila).get(newColumna - 1);
+                        else if (newColumna < tablero.get(0).size() - 1
+                                && tablero.get(newFila).get(newColumna + 1) instanceof Principal)
+                            jug = (Principal) tablero.get(newFila).get(newColumna + 1);
+
+                        if (jug != null) {
+                            combate(tablero, jug, enemigo);
+                        }
+
+                    }
+
+                } else {
+                    enemigos.remove(i);
+                    i--;
+                }
+            }
+
+            mostrarTablero(tablero);
+
+            try {
+                Thread.sleep(500);
+            } catch (Exception e) {
             }
         }
-
-        mostrarTablero(tablero);
-
-        try {
-            Thread.sleep(500);
-        } catch (Exception e) {}
     }
-}
-
 
     /**
      * Combate entre jugador y enemigo
@@ -201,7 +213,6 @@ public class ControlTablero {
         return false;
     }
 
-  
     /**
      * Crea aleatoriamente jugadores principales
      * 
@@ -261,5 +272,35 @@ public class ControlTablero {
 
         return lista;
     }
+
+    /**
+     * Crea Obstaculos en el tablero
+     * @param tablero
+     * @param cantidad
+     * @return lista
+     */
+    public static ArrayList<Obstaculo> crearObstaculosAleatorios(ArrayList<ArrayList<Jugador>> tablero, int cantidad) {
+        ArrayList<Obstaculo> lista = new ArrayList<>();
+    
+        int filas = tablero.size();
+        int columnas = tablero.get(0).size();
+    
+        for (int i = 0; i < cantidad; i++) {
+    
+            int newFila, newColumna;
+    
+            do {
+                newFila = (int) (Math.random() * filas);
+                newColumna = (int) (Math.random() * columnas);
+            } while (tablero.get(newFila).get(newColumna) != null);
+    
+            Obstaculo obstacu = new Obstaculo(newFila, newColumna);
+            tablero.get(newFila).set(newColumna, obstacu);
+            lista.add(obstacu);
+        }
+    
+        return lista;
+    }
+    
 
 }

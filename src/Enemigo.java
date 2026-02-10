@@ -14,9 +14,7 @@ public class Enemigo extends Jugador {
         this.estaVivo = vivo;
     }
 
-    /**
-     * Perseguir al jugador usando ArrayList
-     */
+   
     public void perseguirJugador(Principal jugPrin, ArrayList<ArrayList<Jugador>> tablero) {
 
         int newFila = fila;
