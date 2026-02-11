@@ -19,17 +19,6 @@ public class ControlTablero {
         }
         return tablero;
     }
-
-    /**
-     * Introduce un jugador en el tablero
-     * 
-     * @param tablero
-     * @param jug1
-     */
-    public static void introducirJugador(ArrayList<ArrayList<Jugador>> tablero, Jugador jug1) {
-        tablero.get(jug1.getFila()).set(jug1.getColumna(), jug1);
-    }
-
     /**
      * Mueve un jugador si la casilla esta libre
      * 
