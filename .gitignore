@@ -1,0 +1,34 @@
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos del editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+*.log
+*.cache
+
+# Node modules (si en el futuro añades Node.js)
+node_modules/
+package-lock.json
+
+# Archivos de compilación
+*.class
+*.jar
+*.war
+
+# Carpeta con código Java original (si quieres mantenerla separada)
+Roguelike/
+
+# No ignorar archivos del proyecto
+!*.js
+!*.html
+!*.css
+!*.json
