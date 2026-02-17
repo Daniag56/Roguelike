@@ -3,7 +3,8 @@
  */
 class Enemigo extends Jugador {
     constructor(fila, columna) {
-        super(fila, columna, "██");
+        // Roguelike clásico: enemigo como 'E'
+        super(fila, columna, "E");
     }
 
     isVivo() {

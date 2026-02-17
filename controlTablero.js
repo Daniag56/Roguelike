@@ -2,6 +2,79 @@
  * Control del tablero y lógica del juego
  */
 class ControlTablero {
+    // ----------------------------
+    // Sprites (Modelos PJ)
+    // ----------------------------
+    static _sprites = null;
+    static _spritesLoading = false;
+    static _lastTableroForRedraw = null;
+    static _lastPositions = new WeakMap(); // entity -> { f, c, movedAt }
+
+    static _spritePaths = {
+        background: 'Roguelike/Modelos PJ/fondo/fondo.png',
+        playerIdle: 'Roguelike/Modelos PJ/Jugador/Jugador Estatico.png',
+        playerMove: [
+            // Modelos actuales en carpeta Jugador
+            'Roguelike/Modelos PJ/Jugador/Jugador en movimiento 2.png',
+        ],
+        enemyIdle: [
+            // Modelos actuales en carpeta Enemigo
+            'Roguelike/Modelos PJ/Enemigo/Enemigo estatico 2.png',
+        ],
+        enemyMove: [
+            'Roguelike/Modelos PJ/Enemigo/Enemigo en movimiento 2.png',
+        ],
+    };
+
+    static _loadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`No se pudo cargar sprite: ${src}`));
+            // Importante: rutas con espacios (Modelos PJ) en file://
+            img.src = encodeURI(src);
+        });
+    }
+
+    /**
+     * Precarga sprites de jugador/enemigo (si existen).
+     * No bloquea el render: si aún no están, se dibuja un fallback.
+     */
+    static preloadSprites() {
+        if (this._sprites || this._spritesLoading) return;
+        this._spritesLoading = true;
+
+        const p = this._spritePaths;
+        Promise.all([
+            this._loadImage(p.background),
+            this._loadImage(p.playerIdle),
+            ...p.playerMove.map((s) => this._loadImage(s)),
+            ...p.enemyIdle.map((s) => this._loadImage(s)),
+            ...p.enemyMove.map((s) => this._loadImage(s)),
+        ])
+            .then((imgs) => {
+                // Orden: idle jugador, mov jugador..., idle enemigo..., mov enemigo...
+                let idx = 0;
+                const background = imgs[idx++];
+                const playerIdle = imgs[idx++];
+                const playerMove = p.playerMove.map(() => imgs[idx++]);
+                const enemyIdle = p.enemyIdle.map(() => imgs[idx++]);
+                const enemyMove = p.enemyMove.map(() => imgs[idx++]);
+
+                this._sprites = { background, playerIdle, playerMove, enemyIdle, enemyMove };
+            })
+            .catch((e) => {
+                // Si falla, no rompemos el juego: seguirá con fallback.
+                console.warn(e);
+            })
+            .finally(() => {
+                this._spritesLoading = false;
+                if (this._lastTableroForRedraw) {
+                    this.mostrarTablero(this._lastTableroForRedraw);
+                }
+            });
+    }
+
     /**
      * Crea un tablero usando arrays bidimensionales
      * @param {number} fila 
@@ -44,47 +117,196 @@ class ControlTablero {
     }
 
     /**
-     * Muestra el tablero en el DOM
+     * Muestra el tablero con gráficos en Canvas
      * @param {Array<Array<Jugador|null>>} tablero 
      */
     static mostrarTablero(tablero) {
-        const container = document.getElementById('tablero-container');
-        let tabla = document.getElementById('tablero');
-        
-        if (!tabla) {
-            tabla = document.createElement('table');
-            tabla.id = 'tablero';
-            container.innerHTML = '';
-            container.appendChild(tabla);
+        this._lastTableroForRedraw = tablero;
+        this.preloadSprites();
+
+        const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('game-canvas'));
+        if (!canvas) return;
+
+        const filas = tablero.length;
+        const columnas = tablero[0]?.length ?? 0;
+        if (filas === 0 || columnas === 0) return;
+
+        // Tamaño del tile (px). Sube/baja esto si quieres más grande.
+        const tile = 32;
+        const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+
+        const cssWidth = columnas * tile;
+        const cssHeight = filas * tile;
+
+        // Ajuste de tamaño (nítido en pantallas retina)
+        canvas.width = cssWidth * dpr;
+        canvas.height = cssHeight * dpr;
+        canvas.style.width = `${cssWidth}px`;
+        canvas.style.height = `${cssHeight}px`;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+
+        // Fondo general (un poco de viñeta)
+        ctx.fillStyle = '#070812';
+        ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+        // Helpers de dibujo (texturitas simples sin assets)
+        const drawFloor = (x, y) => {
+            ctx.fillStyle = '#0b0d16';
+            ctx.fillRect(x, y, tile, tile);
+            // ruido sutil
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(x + 6, y + 9, 2, 2);
+            ctx.fillRect(x + 15, y + 5, 1, 1);
+            ctx.fillRect(x + 10, y + 16, 1, 1);
+        };
+
+        const drawWall = (x, y) => {
+            ctx.fillStyle = '#22242f';
+            ctx.fillRect(x, y, tile, tile);
+            // ladrillos
+            ctx.fillStyle = '#2f3242';
+            ctx.fillRect(x + 2, y + 4, tile - 4, 4);
+            ctx.fillRect(x + 2, y + 12, tile - 4, 4);
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fillRect(x, y + tile - 3, tile, 3);
+        };
+
+        const drawEntityFallback = (x, y, base, glow) => {
+            // sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(x + tile / 2, y + tile * 0.78, tile * 0.28, tile * 0.12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // cuerpo (círculo pixelado)
+            ctx.fillStyle = base;
+            ctx.fillRect(x + 8, y + 6, 8, 10);
+            ctx.fillRect(x + 7, y + 8, 10, 8);
+
+            // brillo
+            ctx.fillStyle = glow;
+            ctx.fillRect(x + 9, y + 7, 2, 2);
+            ctx.fillRect(x + 11, y + 6, 2, 2);
+        };
+
+        /**
+         * Dibuja un sprite. Si detecta que es una tira (sprite sheet horizontal),
+         * renderiza el frame indicado.
+         */
+        const drawSprite = (img, x, y, frameIndex = 0) => {
+            if (!img) return;
+            const iw = img.naturalWidth || img.width;
+            const ih = img.naturalHeight || img.height;
+            if (!iw || !ih) return;
+
+            // Detectar sprite sheet horizontal (ej: 264x53 ~ 5 frames)
+            const ratio = iw / ih;
+            const approxFrames = Math.max(1, Math.round(ratio));
+            const isStrip = approxFrames > 1 && Math.abs(ratio - approxFrames) < 0.22;
+
+            const frames = isStrip ? approxFrames : 1;
+            const fi = ((frameIndex % frames) + frames) % frames;
+
+            const sw = iw / frames;
+            const sh = ih;
+            const sx = fi * sw;
+            const sy = 0;
+
+            // Centrar y escalar dentro del tile manteniendo aspecto (por frame)
+            const scale = Math.min(tile / sw, tile / sh);
+            const w = Math.max(1, Math.floor(sw * scale));
+            const h = Math.max(1, Math.floor(sh * scale));
+            const dx = x + Math.floor((tile - w) / 2);
+            const dy = y + Math.floor((tile - h) / 2);
+
+            // sombra suave
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.ellipse(x + tile / 2, y + tile * 0.82, tile * 0.26, tile * 0.10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.drawImage(img, sx, sy, sw, sh, dx, dy, w, h);
+        };
+
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        const sprites = this._sprites;
+
+        // Fondo del tablero (imagen)
+        if (sprites?.background) {
+            // “cover” para que llene el canvas sin deformarse
+            const img = sprites.background;
+            const iw = img.naturalWidth || img.width;
+            const ih = img.naturalHeight || img.height;
+            if (iw && ih) {
+                const scale = Math.max(cssWidth / iw, cssHeight / ih);
+                const w = iw * scale;
+                const h = ih * scale;
+                const dx = (cssWidth - w) / 2;
+                const dy = (cssHeight - h) / 2;
+                ctx.drawImage(img, dx, dy, w, h);
+                // oscurecer un pelín para que se vean entidades/tiles
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.fillRect(0, 0, cssWidth, cssHeight);
+            }
         }
 
-        // Limpiar tabla existente
-        tabla.innerHTML = '';
+        for (let i = 0; i < filas; i++) {
+            for (let j = 0; j < columnas; j++) {
+                const x = j * tile;
+                const y = i * tile;
 
-        for (let i = 0; i < tablero.length; i++) {
-            const fila = document.createElement('tr');
-            for (let j = 0; j < tablero[i].length; j++) {
-                const celda = document.createElement('td');
-                const jug = tablero[i][j];
-                
-                if (jug === null) {
-                    celda.className = 'celda-vacia';
-                    celda.textContent = ' ';
+                const cell = tablero[i][j];
+                if (cell instanceof Obstaculo) {
+                    drawWall(x, y);
                 } else {
-                    if (jug instanceof Principal) {
-                        celda.className = 'jugador-principal';
-                        celda.textContent = jug.getRepJug();
-                    } else if (jug instanceof Enemigo) {
-                        celda.className = 'enemigo';
-                        celda.textContent = jug.getRepJug();
-                    } else if (jug instanceof Obstaculo) {
-                        celda.className = 'obstaculo';
-                        celda.textContent = jug.getRepJug();
+                    drawFloor(x, y);
+                    if (cell instanceof Principal) {
+                        // Detectar movimiento (para usar sprite de movimiento)
+                        const prev = this._lastPositions.get(cell);
+                        const moved = !prev || prev.f !== i || prev.c !== j;
+                        const movedAt = moved ? now : prev.movedAt;
+                        this._lastPositions.set(cell, { f: i, c: j, movedAt });
+
+                        const isMoving = now - movedAt < 220;
+                        if (sprites) {
+                            if (isMoving) {
+                                const frames = sprites.playerMove?.length ? sprites.playerMove : [sprites.playerIdle];
+                                const img = frames[Math.floor(now / 160) % frames.length];
+                                drawSprite(img, x, y, Math.floor(now / 120));
+                            } else {
+                                drawSprite(sprites.playerIdle, x, y, 0);
+                            }
+                        } else {
+                            drawEntityFallback(x, y, '#10a6ff', 'rgba(255,255,255,0.35)');
+                        }
+                    } else if (cell instanceof Enemigo) {
+                        const prev = this._lastPositions.get(cell);
+                        const moved = !prev || prev.f !== i || prev.c !== j;
+                        const movedAt = moved ? now : prev.movedAt;
+                        this._lastPositions.set(cell, { f: i, c: j, movedAt });
+
+                        const isMoving = now - movedAt < 220;
+                        if (sprites) {
+                            const frames = isMoving ? sprites.enemyMove : sprites.enemyIdle;
+                            const frame = frames[Math.floor(now / 180) % frames.length];
+                            drawSprite(frame, x, y, Math.floor(now / 180));
+                        } else {
+                            drawEntityFallback(x, y, '#ffd000', 'rgba(255,255,255,0.25)');
+                        }
                     }
                 }
-                fila.appendChild(celda);
             }
-            tabla.appendChild(fila);
+        }
+
+        // UI overlay suave (scanlines)
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        for (let y = 0; y < cssHeight; y += 4) {
+            ctx.fillRect(0, y, cssWidth, 1);
         }
     }
 

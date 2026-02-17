@@ -3,7 +3,8 @@
  */
 class Principal extends Jugador {
     constructor(fila, columna) {
-        super(fila, columna, "██");
+        // Roguelike clásico: jugador como '@'
+        super(fila, columna, "@");
     }
 
     isVivo() {

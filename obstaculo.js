@@ -3,6 +3,7 @@
  */
 class Obstaculo extends Jugador {
     constructor(fila, columna) {
-        super(fila, columna, "██");
+        // Roguelike clásico: muro/obstáculo como '#'
+        super(fila, columna, "#");
     }
 }
