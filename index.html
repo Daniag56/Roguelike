@@ -3,37 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roguelike Game</title>
+    <title>WARHHAMER SURVIVOR</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container terminal">
         <header class="header">
-            <h1>WARHAMMER</h1>
-            <div class="legend" aria-label="Leyenda">
+            <h1 class="title-arc">WARHHAMER SURVIVOR</h1>
+            <div class="controls controls-top">
+                <button id="btn-iniciar" onclick="iniciarJuego()">Iniciar</button>
+                <button id="btn-pausar" onclick="pausarJuego()" class="hidden">Pausar</button>
+                <button id="btn-reiniciar" onclick="reiniciarJuego()" class="hidden">Reiniciar</button>
+            </div>
+            <div class="legend hidden" aria-label="Leyenda">
                 <span class="legend-item legend-sprite">
-                    <img
-                        class="legend-img"
-                        src="Roguelike/Modelos%20PJ/Jugador/Jugador%20Estatico.png"
-                        alt="Jugador"
-                    />
+                    <img class="legend-img" src="Modelos PJ/Jugador/Jugador Estatico.png" alt="Jugador" />
                     <span>Jugador</span>
                 </span>
                 <span class="legend-item legend-sprite">
-                    <img
-                        class="legend-img"
-                        src="Roguelike/Modelos%20PJ/Enemigo/Enemigo%20estatico%202.png"
-                        alt="Enemigo"
-                    />
+                    <img class="legend-img" src="Modelos PJ/Enemigo/Enemigo estatico 2.png" alt="Enemigo" />
                     <span>Enemigo</span>
                 </span>
             </div>
         </header>
 
-        <div class="game-info" role="status" aria-live="polite">
+        <div id="game-bar" class="game-bar hidden" aria-label="Controles de juego">
+            <div class="game-bar-group">
+                <span class="label">Velocidad:</span>
+                <div class="speed-buttons">
+                    <button id="vel-lenta" class="speed-btn" onclick="setVelocidadLenta()">Lenta</button>
+                    <button id="vel-normal" class="speed-btn" onclick="setVelocidadNormal()">Normal</button>
+                    <button id="vel-rapida" class="speed-btn" onclick="setVelocidadRapida()">Rápida</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-info hidden" role="status" aria-live="polite">
             <div class="info-item">
                 <span class="label">Jugadores vivos:</span>
                 <span id="jugadores-vivos">0</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Ronda:</span>
+                <span id="ronda-actual">1</span>
             </div>
             <div class="info-item">
                 <span class="label">Enemigos vivos:</span>
@@ -41,16 +53,20 @@
             </div>
             <div class="info-item">
                 <span class="label">Estado:</span>
-                <span id="estado-juego">Iniciando...</span>
+                <span id="estado-juego">Pulsa Iniciar para jugar</span>
             </div>
         </div>
-        <div id="tablero-container" class="screen" aria-label="Pantalla de juego">
+        <div id="tablero-container" class="screen hidden" aria-label="Pantalla de juego">
             <canvas id="game-canvas" aria-label="Canvas del juego"></canvas>
         </div>
-        <div class="controls">
-            <button id="btn-iniciar" onclick="iniciarJuego()">Iniciar Juego</button>
-            <button id="btn-pausar" onclick="pausarJuego()" disabled>Pausar</button>
-            <button id="btn-reiniciar" onclick="reiniciarJuego()" disabled>Reiniciar</button>
+
+        <!-- Modal entre rondas -->
+        <div id="modal-ronda" class="modal-overlay hidden" aria-modal="true" aria-labelledby="modal-ronda-titulo">
+            <div class="modal-ronda-contenido">
+                <h2 id="modal-ronda-titulo" class="modal-ronda-titulo">¿Quieres pasar de ronda?</h2>
+                <p id="modal-ronda-jugadores" class="modal-ronda-info">Jugadores restantes: <span id="modal-jugadores-count">0</span></p>
+                <button id="modal-ronda-aceptar" class="modal-ronda-btn" onclick="confirmarPasarRonda()">Sí, pasar ronda</button>
+            </div>
         </div>
     </div>
     <script src="jugador.js"></script>

@@ -9,20 +9,21 @@ class ControlTablero {
     static _spritesLoading = false;
     static _lastTableroForRedraw = null;
     static _lastPositions = new WeakMap(); // entity -> { f, c, movedAt }
+    static _entityAnimations = new Map(); // entity -> { fromF, fromC, toF, toC, startTime, duration }
+    static ANIM_DURATION = 380; // ms para interpolación continua (casi todo el ciclo entre turnos)
 
+    // Rutas relativas al HTML (carpeta del proyecto = donde está index.html)
     static _spritePaths = {
-        background: 'Roguelike/Modelos PJ/fondo/fondo.png',
-        playerIdle: 'Roguelike/Modelos PJ/Jugador/Jugador Estatico.png',
+        background: 'Modelos PJ/Fondo/Fondo_Cripta.png',
+        playerIdle: 'Modelos PJ/Jugador/Jugador Estatico.png',
         playerMove: [
-            // Modelos actuales en carpeta Jugador
-            'Roguelike/Modelos PJ/Jugador/Jugador en movimiento 2.png',
+            'Modelos PJ/Jugador/Jugador en movimiento 2.png',
         ],
         enemyIdle: [
-            // Modelos actuales en carpeta Enemigo
-            'Roguelike/Modelos PJ/Enemigo/Enemigo estatico 2.png',
+            'Modelos PJ/Enemigo/alien estatico.png',
         ],
         enemyMove: [
-            'Roguelike/Modelos PJ/Enemigo/Enemigo en movimiento 2.png',
+            'Modelos PJ/Enemigo/alien en movimiento.png',
         ],
     };
 
@@ -31,8 +32,12 @@ class ControlTablero {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = () => reject(new Error(`No se pudo cargar sprite: ${src}`));
-            // Importante: rutas con espacios (Modelos PJ) en file://
-            img.src = encodeURI(src);
+            // Resolver ruta relativa al documento para que funcione con cualquier base
+            const base = typeof document !== 'undefined' && document.baseURI
+                ? document.baseURI.replace(/[^/]+$/, '')
+                : '';
+            const url = new URL(src, base);
+            img.src = url.href;
         });
     }
 
@@ -111,9 +116,14 @@ class ControlTablero {
             return;
         }
 
-        tablero[jugPrin.getFila()][jugPrin.getColumna()] = null;
+        const oldF = jugPrin.getFila();
+        const oldC = jugPrin.getColumna();
+        tablero[oldF][oldC] = null;
         jugPrin.moverJugador(newFila, newColumna);
         tablero[newFila][newColumna] = jugPrin;
+        // Registrar animación para interpolación suave
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        this._entityAnimations.set(jugPrin, { fromF: oldF, fromC: oldC, toF: newFila, toC: newColumna, startTime: now, duration: this.ANIM_DURATION });
     }
 
     /**
@@ -131,8 +141,8 @@ class ControlTablero {
         const columnas = tablero[0]?.length ?? 0;
         if (filas === 0 || columnas === 0) return;
 
-        // Tamaño del tile (px). Sube/baja esto si quieres más grande.
-        const tile = 32;
+        // Tamaño del tile (px). Mayor = jugadores/enemigos más visibles.
+        const tile = 56;
         const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
 
         const cssWidth = columnas * tile;
@@ -141,10 +151,22 @@ class ControlTablero {
         // Ajuste de tamaño (nítido en pantallas retina)
         canvas.width = cssWidth * dpr;
         canvas.height = cssHeight * dpr;
-        canvas.style.width = `${cssWidth}px`;
-        canvas.style.height = `${cssHeight}px`;
 
-        const ctx = canvas.getContext('2d');
+        // Escalar para que el tablero quepa entero en pantalla
+        const container = document.getElementById('tablero-container');
+        let maxW = container ? container.clientWidth : 0;
+        let maxH = container ? container.clientHeight : 0;
+        if (maxW <= 0 || maxH <= 0) {
+            maxW = Math.min(cssWidth, typeof window !== 'undefined' ? window.innerWidth - 80 : cssWidth);
+            maxH = Math.min(cssHeight, typeof window !== 'undefined' ? Math.floor(window.innerHeight * 0.7) : cssHeight);
+        }
+        const scale = Math.min(1, maxW / cssWidth, maxH / cssHeight);
+        const displayW = Math.max(1, Math.floor(cssWidth * scale));
+        const displayH = Math.max(1, Math.floor(cssHeight * scale));
+        canvas.style.width = `${displayW}px`;
+        canvas.style.height = `${displayH}px`;
+
+        const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: false }) || canvas.getContext('2d');
         if (!ctx) return;
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -166,32 +188,62 @@ class ControlTablero {
         };
 
         const drawWall = (x, y) => {
-            ctx.fillStyle = '#22242f';
+            ctx.fillStyle = '#0d0e14';
             ctx.fillRect(x, y, tile, tile);
-            // ladrillos
-            ctx.fillStyle = '#2f3242';
+            // ladrillos más oscuros
+            ctx.fillStyle = '#14161d';
             ctx.fillRect(x + 2, y + 4, tile - 4, 4);
             ctx.fillRect(x + 2, y + 12, tile - 4, 4);
-            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(x, y + tile - 3, tile, 3);
         };
 
         const drawEntityFallback = (x, y, base, glow) => {
+            const pad = tile * 0.2;
+            const w = tile - pad * 2;
+            const h = tile * 0.65;
             // sombra
             ctx.fillStyle = 'rgba(0,0,0,0.4)';
             ctx.beginPath();
-            ctx.ellipse(x + tile / 2, y + tile * 0.78, tile * 0.28, tile * 0.12, 0, 0, Math.PI * 2);
+            ctx.ellipse(x + tile / 2, y + tile * 0.78, tile * 0.3, tile * 0.12, 0, 0, Math.PI * 2);
             ctx.fill();
-
-            // cuerpo (círculo pixelado)
+            // cuerpo más grande
             ctx.fillStyle = base;
-            ctx.fillRect(x + 8, y + 6, 8, 10);
-            ctx.fillRect(x + 7, y + 8, 10, 8);
-
+            ctx.fillRect(x + pad + 2, y + pad, w - 4, h - 2);
+            ctx.fillRect(x + pad, y + pad + 2, w, h - 4);
             // brillo
             ctx.fillStyle = glow;
-            ctx.fillRect(x + 9, y + 7, 2, 2);
-            ctx.fillRect(x + 11, y + 6, 2, 2);
+            ctx.fillRect(x + pad + 4, y + pad + 4, 4, 4);
+        };
+
+        const drawHealthBar = (x, y, entidad) => {
+            if (!entidad || typeof entidad.getVida !== 'function' || typeof entidad.getVidaMax !== 'function') {
+                return;
+            }
+            const vida = entidad.getVida();
+            const vidaMax = entidad.getVidaMax();
+            if (!vidaMax || vidaMax <= 0) return;
+
+            const ratio = Math.max(0, Math.min(1, vida / vidaMax));
+            const barWidth = Math.floor(tile * 0.9);
+            const barHeight = 4;
+            const barX = x + Math.floor((tile - barWidth) / 2);
+            const barY = y + 2;
+
+            // Fondo de la barra
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
+
+            // Barra completa
+            ctx.fillStyle = 'rgba(90, 0, 0, 0.85)';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            // Vida actual
+            const currentWidth = Math.floor(barWidth * ratio);
+            if (currentWidth > 0) {
+                ctx.fillStyle = '#ff3b3b';
+                ctx.fillRect(barX, barY, currentWidth, barHeight);
+            }
         };
 
         /**
@@ -217,8 +269,8 @@ class ControlTablero {
             const sx = fi * sw;
             const sy = 0;
 
-            // Centrar y escalar dentro del tile manteniendo aspecto (por frame)
-            const scale = Math.min(tile / sw, tile / sh);
+            // Escalar sprites más grandes (personajes bien visibles)
+            const scale = Math.min(tile / sw, tile / sh) * 2.35;
             const w = Math.max(1, Math.floor(sw * scale));
             const h = Math.max(1, Math.floor(sh * scale));
             const dx = x + Math.floor((tile - w) / 2);
@@ -234,10 +286,27 @@ class ControlTablero {
         };
 
         const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-        const sprites = this._sprites;
 
-        // Fondo del tablero (imagen)
-        if (sprites?.background) {
+        const getDrawPos = (entity, gridF, gridC) => {
+            const anim = this._entityAnimations.get(entity);
+            if (!anim) return { x: gridC * tile, y: gridF * tile };
+            const elapsed = now - anim.startTime;
+            if (elapsed >= anim.duration) {
+                this._entityAnimations.delete(entity);
+                return { x: anim.toC * tile, y: anim.toF * tile };
+            }
+            const t = elapsed / anim.duration;
+            const eased = 1 - Math.pow(1 - t, 3);
+            const x = (1 - eased) * anim.fromC * tile + eased * anim.toC * tile;
+            const y = (1 - eased) * anim.fromF * tile + eased * anim.toF * tile;
+            return { x, y };
+        };
+
+        const sprites = this._sprites;
+        const hayFondo = !!(sprites?.background);
+
+        // Fondo del tablero: Fondo_Cripta desde Modelos PJ/Fondo/
+        if (hayFondo) {
             // “cover” para que llene el canvas sin deformarse
             const img = sprites.background;
             const iw = img.naturalWidth || img.width;
@@ -250,7 +319,7 @@ class ControlTablero {
                 const dy = (cssHeight - h) / 2;
                 ctx.drawImage(img, dx, dy, w, h);
                 // oscurecer un pelín para que se vean entidades/tiles
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
                 ctx.fillRect(0, 0, cssWidth, cssHeight);
             }
         }
@@ -264,40 +333,43 @@ class ControlTablero {
                 if (cell instanceof Obstaculo) {
                     drawWall(x, y);
                 } else {
-                    drawFloor(x, y);
+                    if (!hayFondo) drawFloor(x, y);
                     if (cell instanceof Principal) {
-                        // Detectar movimiento (para usar sprite de movimiento)
+                        const pos = getDrawPos(cell, i, j);
                         const prev = this._lastPositions.get(cell);
                         const moved = !prev || prev.f !== i || prev.c !== j;
                         const movedAt = moved ? now : prev.movedAt;
                         this._lastPositions.set(cell, { f: i, c: j, movedAt });
 
-                        const isMoving = now - movedAt < 220;
+                        const isMoving = now - movedAt < this.ANIM_DURATION + 60;
                         if (sprites) {
                             if (isMoving) {
                                 const frames = sprites.playerMove?.length ? sprites.playerMove : [sprites.playerIdle];
                                 const img = frames[Math.floor(now / 160) % frames.length];
-                                drawSprite(img, x, y, Math.floor(now / 120));
+                                drawSprite(img, pos.x, pos.y, Math.floor(now / 120));
                             } else {
-                                drawSprite(sprites.playerIdle, x, y, 0);
+                                drawSprite(sprites.playerIdle, pos.x, pos.y, 0);
                             }
                         } else {
-                            drawEntityFallback(x, y, '#10a6ff', 'rgba(255,255,255,0.35)');
+                            drawEntityFallback(pos.x, pos.y, '#10a6ff', 'rgba(255,255,255,0.35)');
                         }
+                        drawHealthBar(pos.x, pos.y, cell);
                     } else if (cell instanceof Enemigo) {
+                        const pos = getDrawPos(cell, i, j);
                         const prev = this._lastPositions.get(cell);
                         const moved = !prev || prev.f !== i || prev.c !== j;
                         const movedAt = moved ? now : prev.movedAt;
                         this._lastPositions.set(cell, { f: i, c: j, movedAt });
 
-                        const isMoving = now - movedAt < 220;
+                        const isMoving = now - movedAt < this.ANIM_DURATION + 60;
                         if (sprites) {
                             const frames = isMoving ? sprites.enemyMove : sprites.enemyIdle;
                             const frame = frames[Math.floor(now / 180) % frames.length];
-                            drawSprite(frame, x, y, Math.floor(now / 180));
+                            drawSprite(frame, pos.x, pos.y, Math.floor(now / 180));
                         } else {
-                            drawEntityFallback(x, y, '#ffd000', 'rgba(255,255,255,0.25)');
+                            drawEntityFallback(pos.x, pos.y, '#ffd000', 'rgba(255,255,255,0.25)');
                         }
+                        drawHealthBar(pos.x, pos.y, cell);
                     }
                 }
             }
@@ -311,34 +383,31 @@ class ControlTablero {
     }
 
     /**
-     * Ejecuta un turno del juego
+     * Ejecuta un turno del juego.
+     * Devuelve false SOLO si ya no quedan jugadores vivos (fin de partida).
+     * El control de rondas/enemigos lo gestiona la clase Juego.
      * @param {Array<Array<Jugador|null>>} tablero 
      * @param {Array<Principal>} jugadores 
      * @param {Array<Enemigo>} enemigos 
      * @returns {boolean} true si el juego debe continuar, false si terminó
      */
     static ejecutarTurno(tablero, jugadores, enemigos) {
-        if (!this.comprobadorEnemigosvivos(enemigos) || !this.comprobadorJugadoresPrinvivos(jugadores)) {
+        const hayJugadores = this.comprobadorJugadoresPrinvivos(jugadores);
+        if (!hayJugadores) {
+            this.actualizarInfo(jugadores, enemigos);
             return false;
         }
 
-        // Mover jugadores principales
+        // Mover jugadores principales (movimiento aleatorio)
         for (const prin of jugadores) {
             if (prin.isVivo()) {
                 let newFila = prin.getFila() + Math.floor(Math.random() * 3) - 1;
                 let newColumna = prin.getColumna() + Math.floor(Math.random() * 3) - 1;
 
-                if (newFila < 0) {
-                    newFila = 0;
-                } else if (newFila >= tablero.length) {
-                    newFila = tablero.length - 1;
-                }
-
-                if (newColumna < 0) {
-                    newColumna = 0;
-                } else if (newColumna >= tablero[0].length) {
-                    newColumna = tablero[0].length - 1;
-                }
+                if (newFila < 0) newFila = 0;
+                else if (newFila >= tablero.length) newFila = tablero.length - 1;
+                if (newColumna < 0) newColumna = 0;
+                else if (newColumna >= tablero[0].length) newColumna = tablero[0].length - 1;
 
                 this.mover(tablero, prin, newFila, newColumna);
             }
@@ -357,10 +426,15 @@ class ControlTablero {
                 }
 
                 if (objetivo !== null) {
+                    const oldF = enemigo.getFila();
+                    const oldC = enemigo.getColumna();
                     enemigo.perseguirJugador(objetivo, tablero);
-
                     const newFila = enemigo.getFila();
                     const newColumna = enemigo.getColumna();
+                    if (newFila !== oldF || newColumna !== oldC) {
+                        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                        this._entityAnimations.set(enemigo, { fromF: oldF, fromC: oldC, toF: newFila, toC: newColumna, startTime: now, duration: this.ANIM_DURATION });
+                    }
 
                     let jug = null;
 
@@ -383,30 +457,30 @@ class ControlTablero {
             }
         }
 
-        this.mostrarTablero(tablero);
         this.actualizarInfo(jugadores, enemigos);
-
         return true;
     }
 
+    /** Daño que inflige el jugador al enemigo por golpe */
+    static DAÑO_JUGADOR = 25;
+    /** Daño que inflige el enemigo al jugador por golpe */
+    static DAÑO_ENEMIGO = 20;
+
     /**
-     * Combate entre jugador y enemigo
+     * Combate entre jugador y enemigo: se infligen daño; si vida <= 0 mueren.
      * @param {Array<Array<Jugador|null>>} tablero 
      * @param {Principal} jugPrincipal 
      * @param {Enemigo} enemigo 
-     * @returns {boolean}
      */
     static combate(tablero, jugPrincipal, enemigo) {
-        const ganar = Math.random() < 0.5;
+        jugPrincipal.recibirDano(this.DAÑO_ENEMIGO);
+        enemigo.recibirDano(this.DAÑO_JUGADOR);
 
-        if (ganar) {
-            tablero[enemigo.getFila()][enemigo.getColumna()] = null;
-            enemigo.setEstaVivo(false);
-            return true;
-        } else {
+        if (!jugPrincipal.isVivo()) {
             tablero[jugPrincipal.getFila()][jugPrincipal.getColumna()] = null;
-            jugPrincipal.setEstaVivo(false);
-            return false;
+        }
+        if (!enemigo.isVivo()) {
+            tablero[enemigo.getFila()][enemigo.getColumna()] = null;
         }
     }
 
@@ -525,21 +599,40 @@ class ControlTablero {
      * @param {Array<Enemigo>} enemigos 
      */
     static actualizarInfo(jugadores, enemigos) {
-        const jugadoresVivos = jugadores.filter(j => j.isVivo()).length;
-        const enemigosVivos = enemigos.filter(e => e.isVivo()).length;
+        const jugadoresVivos = jugadores.filter(j => j.isVivo());
+        const enemigosVivos = enemigos.filter(e => e.isVivo());
+        const totalVidaJugadores = jugadoresVivos.reduce((s, j) => s + j.getVida(), 0);
+        const totalVidaEnemigos = enemigosVivos.reduce((s, e) => s + e.getVida(), 0);
 
-        document.getElementById('jugadores-vivos').textContent = jugadoresVivos;
-        document.getElementById('enemigos-vivos').textContent = enemigosVivos;
+        const elJ = document.getElementById('jugadores-vivos');
+        const elE = document.getElementById('enemigos-vivos');
+        const elR = document.getElementById('ronda-actual');
+        if (elJ) elJ.textContent = `${jugadoresVivos.length} (${totalVidaJugadores} HP)`;
+        if (elE) elE.textContent = `${enemigosVivos.length} (${totalVidaEnemigos} HP)`;
+        if (elR && typeof Juego !== 'undefined' && Number.isInteger(Juego.rondaActual)) {
+            elR.textContent = `${Juego.rondaActual}`;
+        }
 
-        if (jugadoresVivos === 0) {
-            document.getElementById('estado-juego').textContent = '¡Derrota! Todos los jugadores han muerto.';
-            document.getElementById('estado-juego').style.color = '#ff4444';
-        } else if (enemigosVivos === 0) {
-            document.getElementById('estado-juego').textContent = '¡Victoria! Todos los enemigos han sido derrotados.';
-            document.getElementById('estado-juego').style.color = '#4ecdc4';
+        const estado = document.getElementById('estado-juego');
+        if (!estado) return;
+        if (jugadoresVivos.length === 0) {
+            estado.textContent = '¡Derrota! Todos los jugadores han muerto.';
+            estado.style.color = '#ff4444';
+        } else if (enemigosVivos.length === 0) {
+            estado.textContent = '¡Victoria! Todos los enemigos han sido derrotados.';
+            estado.style.color = '#4ecdc4';
         } else {
-            document.getElementById('estado-juego').textContent = 'En juego...';
-            document.getElementById('estado-juego').style.color = '#4ecdc4';
+            estado.textContent = 'En juego...';
+            estado.style.color = '#4ecdc4';
         }
     }
+}
+
+// Redibujar tablero al redimensionar ventana para mantener escalado
+if (typeof window !== 'undefined') {
+    window.addEventListener('resize', () => {
+        if (ControlTablero._lastTableroForRedraw) {
+            ControlTablero.mostrarTablero(ControlTablero._lastTableroForRedraw);
+        }
+    });
 }

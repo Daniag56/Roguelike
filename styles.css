@@ -42,22 +42,48 @@ h1 {
     letter-spacing: 0.08em;
 }
 
+h1.title-arc {
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 12px;
+    font-size: 2.4em;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: radial-gradient(circle at 50% 0%, #ffe66d 0%, #ff7e5f 40%, #f836ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        0 0 18px rgba(255, 190, 120, 0.5);
+    transform-origin: center bottom;
+    transform: perspective(900px) rotateX(18deg);
+}
+
 .screen {
     width: 100%;
 }
 
 #game-canvas {
     display: block;
-    width: min(100%, 1040px);
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
+    object-fit: contain;
     margin: 0 auto;
     background: #070812;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 14px;
     image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
     box-shadow:
         0 18px 50px rgba(0, 0, 0, 0.55),
         0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .header {
@@ -132,12 +158,17 @@ h1 {
 #tablero-container {
     display: flex;
     justify-content: center;
+    align-items: center;
     margin: 20px 0;
     padding: 14px;
     background: rgba(255, 255, 255, 0.04);
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.10);
-    overflow-x: auto;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    height: 70vh;
+    min-height: 200px;
 }
 
 #tablero {
@@ -184,12 +215,20 @@ h1 {
     color: #8b8b8b;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .controls {
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-top: 20px;
     flex-wrap: wrap;
+}
+
+.controls.controls-top {
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
 button {
@@ -218,6 +257,103 @@ button:active:not(:disabled) {
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Barra de controles de juego (velocidad, etc.) */
+.game-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: linear-gradient(120deg, rgba(12, 16, 40, 0.95), rgba(25, 30, 70, 0.9));
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    gap: 16px;
+}
+
+.game-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.speed-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.speed-btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    background: linear-gradient(180deg, rgba(80, 120, 255, 0.9) 0%, rgba(75, 90, 255, 0.9) 100%);
+}
+
+.speed-btn.active {
+    background: linear-gradient(180deg, #ffb347 0%, #ff6a00 100%);
+    box-shadow: 0 0 0 1px rgba(255, 210, 130, 0.7), 0 12px 26px rgba(0, 0, 0, 0.6);
+}
+
+/* Modal entre rondas */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.25s ease;
+}
+
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-ronda-contenido {
+    background: linear-gradient(160deg, rgba(18, 22, 45, 0.98), rgba(12, 16, 38, 0.98));
+    border: 2px solid rgba(255, 200, 100, 0.4);
+    border-radius: 20px;
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 180, 80, 0.15);
+}
+
+.modal-ronda-titulo {
+    font-size: 1.6em;
+    margin-bottom: 16px;
+    color: #ffe66d;
+    text-shadow: 0 2px 10px rgba(255, 200, 100, 0.4);
+}
+
+.modal-ronda-info {
+    font-size: 1.2em;
+    color: #e9e9f4;
+    margin-bottom: 24px;
+}
+
+.modal-ronda-info span {
+    font-weight: bold;
+    color: #4ecdc4;
+}
+
+.modal-ronda-btn {
+    padding: 14px 32px;
+    font-size: 1.1em;
+    background: linear-gradient(180deg, #4ecdc4 0%, #44a08d 100%);
+    color: #050611;
+    font-weight: bold;
+}
+
+.modal-ronda-btn:hover {
+    filter: brightness(1.15);
 }
 
 @media (max-width: 768px) {
