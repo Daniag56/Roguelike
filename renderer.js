@@ -108,9 +108,10 @@ class Renderer {
     }
 
     static _drawFloor(ctx, x, y, tile) {
-        ctx.fillStyle = '#0b0d16';
+        // Semitransparente para que se vea el fondo (Fondo_Cripta) debajo.
+        ctx.fillStyle = 'rgba(11, 13, 22, 0.86)';
         ctx.fillRect(x, y, tile, tile);
-        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
         ctx.fillRect(x + 6, y + 9, 2, 2);
         ctx.fillRect(x + 15, y + 5, 1, 1);
         ctx.fillRect(x + 10, y + 16, 1, 1);

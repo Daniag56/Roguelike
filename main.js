@@ -4,6 +4,73 @@
 
 let juegoEnPausa = false;
 
+// --- Música ---
+let _musicInit = false;
+let _musicMode = 'menu'; // 'menu' | 'game'
+let _audioMenu = null;
+let _audioGame = null;
+
+function _initMusic() {
+    if (_musicInit) return;
+    _musicInit = true;
+
+    // OJO: nombres de archivo con espacios.
+    _audioMenu = new Audio('Music/Music menu.mp3');
+    _audioGame = new Audio('Music/Music juego.mp3');
+
+    _audioMenu.loop = true;
+    _audioGame.loop = true;
+
+    // Volumen moderado por defecto.
+    _audioMenu.volume = 0.6;
+    _audioGame.volume = 0.6;
+}
+
+function _tryPlay(audio) {
+    try {
+        const p = audio.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) {
+        // Autoplay policies pueden bloquear: ignoramos.
+    }
+}
+
+function playMenuMusic() {
+    _initMusic();
+    _musicMode = 'menu';
+    if (_audioGame) {
+        _audioGame.pause();
+    }
+    if (_audioMenu) {
+        _tryPlay(_audioMenu);
+    }
+}
+
+function playGameMusic() {
+    _initMusic();
+    _musicMode = 'game';
+    if (_audioMenu) {
+        _audioMenu.pause();
+    }
+    if (_audioGame) {
+        _tryPlay(_audioGame);
+    }
+}
+
+function pauseMusic() {
+    try {
+        if (_audioMenu) _audioMenu.pause();
+        if (_audioGame) _audioGame.pause();
+    } catch (e) {
+        // Ignorar
+    }
+}
+
+function resumeMusic() {
+    if (_musicMode === 'menu') playMenuMusic();
+    else playGameMusic();
+}
+
 function iniciarJuego() {
     document.body.classList.add('game-running');
     juegoEnPausa = false;
@@ -41,6 +108,7 @@ function iniciarJuego() {
         }
 
         if (estado) estado.textContent = 'Iniciando...';
+        playGameMusic();
         Juego.iniciarJuego();
     } catch (e) {
         console.error(e);
@@ -78,6 +146,9 @@ function salirPrograma() {
         // Ignorar
     }
 
+    // Volvemos a menú: música de menú.
+    playMenuMusic();
+
     // Volver a la pantalla de menú
     const menu = document.getElementById('main-menu');
     if (menu) menu.classList.remove('hidden');
@@ -105,6 +176,7 @@ function pausarJuego() {
     Juego.pausarJuego();
     juegoEnPausa = true;
     setPausaUI(true);
+    pauseMusic();
 }
 
 function togglePausa() {
@@ -123,6 +195,7 @@ function reanudarJuego() {
     Juego.reanudarJuego();
     juegoEnPausa = false;
     setPausaUI(false);
+    resumeMusic();
 }
 
 function reiniciarJuego() {
@@ -147,6 +220,8 @@ function reiniciarJuego() {
     }
 
     setVelocidadX1();
+    // Reinicio => música de juego.
+    playGameMusic();
 }
 
 function seleccionarVelocidadPanel(id) {
@@ -187,4 +262,6 @@ function confirmarPasarRonda() {
 // Inicialización cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Roguelike Game cargado');
+    // En el menú: música de menú. Autoplay puede bloquear hasta el primer click.
+    playMenuMusic();
 });
