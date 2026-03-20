@@ -91,8 +91,10 @@ class Juego {
             const hayEnemigos = ControlTablero.comprobadorEnemigosvivos(this.enemigos);
 
             if (!hayJugadores || !continuar) {
-                document.getElementById('btn-pausar').disabled = true;
-                document.getElementById('btn-reiniciar').disabled = false;
+                const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+                const btnReiniciar = document.getElementById('btn-reiniciar');
+                if (btnTogglePausa) btnTogglePausa.disabled = true;
+                if (btnReiniciar) btnReiniciar.disabled = false;
                 return;
             }
 
@@ -138,6 +140,9 @@ class Juego {
      */
     static mostrarModalPasarRonda() {
         this.pausarJuego();
+        if (typeof window !== 'undefined' && typeof window.setPausaUI === 'function') {
+            window.setPausaUI(true);
+        }
         const jugadoresVivos = this.principal.filter(j => j.isVivo()).length;
         const modal = document.getElementById('modal-ronda');
         const countEl = document.getElementById('modal-jugadores-count');
@@ -157,6 +162,9 @@ class Juego {
         }
         this.iniciarSiguienteRonda();
         this.reanudarJuego();
+        if (typeof window !== 'undefined' && typeof window.setPausaUI === 'function') {
+            window.setPausaUI(false);
+        }
     }
 
     /**
@@ -185,8 +193,10 @@ class Juego {
     static reiniciarJuego() {
         this.pausarJuego();
         this.iniciarJuego();
-        document.getElementById('btn-pausar').disabled = false;
-        document.getElementById('btn-reiniciar').disabled = false;
+        const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+        const btnReiniciar = document.getElementById('btn-reiniciar');
+        if (btnTogglePausa) btnTogglePausa.disabled = false;
+        if (btnReiniciar) btnReiniciar.disabled = false;
     }
 
     /**

@@ -8,64 +8,75 @@
 </head>
 <body>
     <div class="container terminal">
-        <header class="header">
-            <h1 class="title-arc">WARHHAMER SURVIVOR</h1>
-            <div class="controls controls-top">
-                <button id="btn-iniciar" onclick="iniciarJuego()">Iniciar</button>
-                <button id="btn-pausar" onclick="pausarJuego()" class="hidden">Pausar</button>
-                <button id="btn-reiniciar" onclick="reiniciarJuego()" class="hidden">Reiniciar</button>
-            </div>
-            <div class="legend hidden" aria-label="Leyenda">
-                <span class="legend-item legend-sprite">
-                    <img class="legend-img" src="Modelos PJ/Jugador/Jugador Estatico.png" alt="Jugador" />
-                    <span>Jugador</span>
-                </span>
-                <span class="legend-item legend-sprite">
-                    <img class="legend-img" src="Modelos PJ/Enemigo/Enemigo estatico 2.png" alt="Enemigo" />
-                    <span>Enemigo</span>
-                </span>
-            </div>
-        </header>
-
-        <div id="game-bar" class="game-bar hidden" aria-label="Controles de juego">
-            <div class="game-bar-group">
-                <span class="label">Velocidad:</span>
-                <div class="speed-buttons">
-                    <button id="vel-lenta" class="speed-btn" onclick="setVelocidadLenta()">Lenta</button>
-                    <button id="vel-normal" class="speed-btn" onclick="setVelocidadNormal()">Normal</button>
-                    <button id="vel-rapida" class="speed-btn" onclick="setVelocidadRapida()">Rápida</button>
-                </div>
+        <div id="main-menu" class="main-menu-overlay" aria-label="Menú principal">
+            <div class="main-menu-frame" role="dialog" aria-modal="true">
+                <div class="main-menu-spacer main-menu-spacer-top"></div>
+                <button
+                    id="btn-menu-iniciar"
+                    class="menu-action menu-action-primary"
+                    type="button"
+                    aria-label="INICIAR JUEGO"
+                    onclick="iniciarJuego()"
+                >
+                    INICIAR JUEGO
+                </button>
+                <div class="main-menu-spacer main-menu-spacer-mid"></div>
+                <button
+                    id="btn-menu-salir"
+                    class="menu-action menu-action-secondary"
+                    type="button"
+                    aria-label="SALIR"
+                    onclick="salirPrograma()"
+                >
+                    SALIR
+                </button>
+                <div class="main-menu-spacer main-menu-spacer-bottom"></div>
             </div>
         </div>
+        <header class="header">
+            <h1 class="title-arc">WARHHAMER SURVIVOR</h1>
+        </header>
 
         <div class="game-info hidden" role="status" aria-live="polite">
-            <div class="info-item">
-                <span class="label">Jugadores vivos:</span>
+            <div class="hud-side hud-left info-item hidden">
+                <span class="label">Aliados vivos:</span>
                 <span id="jugadores-vivos">0</span>
             </div>
-            <div class="info-item">
-                <span class="label">Ronda:</span>
+
+            <div class="hud-center">
+                <span class="label">Ronda</span>
                 <span id="ronda-actual">1</span>
             </div>
-            <div class="info-item">
+
+            <div class="hud-side hud-right info-item hidden">
                 <span class="label">Enemigos vivos:</span>
                 <span id="enemigos-vivos">0</span>
             </div>
-            <div class="info-item">
+
+            <div class="hud-status info-item">
                 <span class="label">Estado:</span>
                 <span id="estado-juego">Pulsa Iniciar para jugar</span>
             </div>
         </div>
         <div id="tablero-container" class="screen hidden" aria-label="Pantalla de juego">
-            <canvas id="game-canvas" aria-label="Canvas del juego"></canvas>
+            <div id="board-canvas-wrap" class="board-canvas-wrap">
+                <canvas id="game-canvas" aria-label="Canvas del juego"></canvas>
+            </div>
+
+            <div id="controls-bottom" class="controls-bottom hidden" aria-label="Controles del juego">
+                <button id="btn-toggle-pausa" class="control-btn control-btn-primary" type="button" onclick="togglePausa()">PAUSAR</button>
+                <button id="btn-vel-x1" class="control-btn control-btn-speed" type="button" onclick="setVelocidadX1()">VELOCIDAD x1</button>
+                <button id="btn-vel-x2" class="control-btn control-btn-speed" type="button" onclick="setVelocidadX2()">VELOCIDAD x2</button>
+                <button id="btn-vel-x3" class="control-btn control-btn-speed" type="button" onclick="setVelocidadX3()">VELOCIDAD x3</button>
+            </div>
         </div>
 
         <!-- Modal entre rondas -->
         <div id="modal-ronda" class="modal-overlay hidden" aria-modal="true" aria-labelledby="modal-ronda-titulo">
             <div class="modal-ronda-contenido">
-                <h2 id="modal-ronda-titulo" class="modal-ronda-titulo">¿Quieres pasar de ronda?</h2>
-                <p id="modal-ronda-jugadores" class="modal-ronda-info">Jugadores restantes: <span id="modal-jugadores-count">0</span></p>
-                <button id="modal-ronda-aceptar" class="modal-ronda-btn" onclick="confirmarPasarRonda()">Sí, pasar ronda</button>
+                <h2 id="modal-ronda-titulo" class="modal-ronda-titulo">FIN DE RONDA</h2>
+                <p id="modal-ronda-jugadores" class="modal-ronda-info">Aliados vivos: <span id="modal-jugadores-count">0</span></p>
+                <button id="modal-ronda-aceptar" class="modal-ronda-btn" onclick="confirmarPasarRonda()">CONTINUAR</button>
             </div>
         </div>
     </div>

@@ -5,90 +5,144 @@
 let juegoEnPausa = false;
 
 function iniciarJuego() {
+    document.body.classList.add('game-running');
     Juego.iniciarJuego();
-    document.getElementById('btn-iniciar').classList.add('hidden');
-    document.getElementById('btn-pausar').classList.remove('hidden');
-    document.getElementById('btn-reiniciar').classList.remove('hidden');
-    document.getElementById('btn-pausar').disabled = false;
-    document.getElementById('btn-reiniciar').disabled = false;
-    document.getElementById('btn-pausar').textContent = 'Pausar';
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.add('hidden');
     juegoEnPausa = false;
 
-    // Mostrar elementos de juego solo cuando está en marcha
-    const legend = document.querySelector('.legend');
+    // UI del juego
     const gameInfo = document.querySelector('.game-info');
     const tableroContainer = document.getElementById('tablero-container');
-    const gameBar = document.getElementById('game-bar');
-    if (legend) legend.classList.remove('hidden');
+    const controlsBottom = document.getElementById('controls-bottom');
     if (gameInfo) gameInfo.classList.remove('hidden');
     if (tableroContainer) tableroContainer.classList.remove('hidden');
-    if (gameBar) gameBar.classList.remove('hidden');
+    if (controlsBottom) controlsBottom.classList.remove('hidden');
+
+    const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+    if (btnTogglePausa) {
+        btnTogglePausa.disabled = false;
+        btnTogglePausa.textContent = 'PAUSAR';
+    }
 
     // Velocidad por defecto al iniciar
-    setVelocidadNormal();
+    setVelocidadX1();
 }
 
-function pausarJuego() {
-    if (juegoEnPausa) {
-        Juego.reanudarJuego();
-        document.getElementById('btn-pausar').textContent = 'Pausar';
-        juegoEnPausa = false;
-    } else {
-        Juego.pausarJuego();
-        document.getElementById('btn-pausar').textContent = 'Reanudar';
-        juegoEnPausa = true;
+function salirPrograma() {
+    // En navegadores, `window.close()` solo funciona en casos concretos.
+    // Igual lo intentamos, pero garantizamos un "salir" funcional volviendo al menú.
+    try {
+        window.close();
+    } catch (e) {
+        // Ignorar
+    }
+
+    // Detener render/lógica para que no siga consumiendo recursos.
+    try {
+        if (typeof Juego !== 'undefined') {
+            Juego.enPausa = true;
+            if (Juego._rafId != null) cancelAnimationFrame(Juego._rafId);
+            if (Juego._renderRafId != null) cancelAnimationFrame(Juego._renderRafId);
+        }
+    } catch (e) {
+        // Ignorar
+    }
+
+    // Volver a la pantalla de menú
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.remove('hidden');
+
+    document.body.classList.remove('game-running');
+    const gameInfo = document.querySelector('.game-info');
+    const tableroContainer = document.getElementById('tablero-container');
+    const controlsBottom = document.getElementById('controls-bottom');
+    if (gameInfo) gameInfo.classList.add('hidden');
+    if (tableroContainer) tableroContainer.classList.add('hidden');
+    if (controlsBottom) controlsBottom.classList.add('hidden');
+
+    const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+    if (btnTogglePausa) btnTogglePausa.textContent = 'PAUSAR';
+
+    const canvas = document.getElementById('game-canvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 }
 
-function reiniciarJuego() {
-    Juego.reiniciarJuego();
-    document.getElementById('btn-pausar').textContent = 'Pausar';
-    document.getElementById('btn-pausar').classList.remove('hidden');
-    document.getElementById('btn-reiniciar').classList.remove('hidden');
-    document.getElementById('btn-iniciar').classList.add('hidden');
-    juegoEnPausa = false;
-
-    // Asegurar que la barra de juego y la info sigan visibles tras reiniciar
-    const legend = document.querySelector('.legend');
-    const gameInfo = document.querySelector('.game-info');
-    const tableroContainer = document.getElementById('tablero-container');
-    const gameBar = document.getElementById('game-bar');
-    if (legend) legend.classList.remove('hidden');
-    if (gameInfo) gameInfo.classList.remove('hidden');
-    if (tableroContainer) tableroContainer.classList.remove('hidden');
-    if (gameBar) gameBar.classList.remove('hidden');
-
-    setVelocidadNormal();
+function pausarJuego() {
+    if (juegoEnPausa) return;
+    Juego.pausarJuego();
+    juegoEnPausa = true;
+    setPausaUI(true);
 }
 
-// Controles de velocidad de juego
-function seleccionarBotonVelocidad(id) {
-    const ids = ['vel-lenta', 'vel-normal', 'vel-rapida'];
-    ids.forEach(bid => {
+function togglePausa() {
+    if (juegoEnPausa) reanudarJuego();
+    else pausarJuego();
+}
+
+function setPausaUI(isPausa) {
+    const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+    if (!btnTogglePausa) return;
+    btnTogglePausa.textContent = isPausa ? 'REANUDAR' : 'PAUSAR';
+}
+
+function reanudarJuego() {
+    if (!juegoEnPausa) return;
+    Juego.reanudarJuego();
+    juegoEnPausa = false;
+    setPausaUI(false);
+}
+
+function reiniciarJuego() {
+    document.body.classList.add('game-running');
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.add('hidden');
+
+    Juego.reiniciarJuego();
+    juegoEnPausa = false;
+
+    const gameInfo = document.querySelector('.game-info');
+    const tableroContainer = document.getElementById('tablero-container');
+    const controlsBottom = document.getElementById('controls-bottom');
+    if (gameInfo) gameInfo.classList.remove('hidden');
+    if (tableroContainer) tableroContainer.classList.remove('hidden');
+    if (controlsBottom) controlsBottom.classList.remove('hidden');
+
+    const btnTogglePausa = document.getElementById('btn-toggle-pausa');
+    if (btnTogglePausa) {
+        btnTogglePausa.disabled = false;
+        btnTogglePausa.textContent = 'PAUSAR';
+    }
+
+    setVelocidadX1();
+}
+
+function seleccionarVelocidadPanel(id) {
+    const ids = ['btn-vel-x1', 'btn-vel-x2', 'btn-vel-x3'];
+    ids.forEach((bid) => {
         const el = document.getElementById(bid);
-        if (el) {
-            if (bid === id) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
-        }
+        if (!el) return;
+        if (bid === id) el.classList.add('active');
+        else el.classList.remove('active');
     });
 }
 
-function setVelocidadLenta() {
-    Juego.setFactorVelocidad(0.5);
-    seleccionarBotonVelocidad('vel-lenta');
-}
-
-function setVelocidadNormal() {
+function setVelocidadX1() {
     Juego.setFactorVelocidad(1);
-    seleccionarBotonVelocidad('vel-normal');
+    seleccionarVelocidadPanel('btn-vel-x1');
 }
 
-function setVelocidadRapida() {
+function setVelocidadX2() {
     Juego.setFactorVelocidad(2);
-    seleccionarBotonVelocidad('vel-rapida');
+    seleccionarVelocidadPanel('btn-vel-x2');
+}
+
+function setVelocidadX3() {
+    Juego.setFactorVelocidad(3);
+    seleccionarVelocidadPanel('btn-vel-x3');
 }
 
 /**
@@ -96,6 +150,9 @@ function setVelocidadRapida() {
  */
 function confirmarPasarRonda() {
     Juego.confirmarPasarRonda();
+    // El modal reanuda el juego; actualizamos la UI.
+    juegoEnPausa = false;
+    setPausaUI(false);
 }
 
 // Inicialización cuando se carga la página
