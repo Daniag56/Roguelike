@@ -6,18 +6,47 @@ let juegoEnPausa = false;
 
 function iniciarJuego() {
     document.body.classList.add('game-running');
-    Juego.iniciarJuego();
-    const menu = document.getElementById('main-menu');
-    if (menu) menu.classList.add('hidden');
     juegoEnPausa = false;
 
-    // UI del juego
+    // UI del juego (mostrar antes para que veas errores también)
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.add('hidden');
     const gameInfo = document.querySelector('.game-info');
     const tableroContainer = document.getElementById('tablero-container');
     const controlsBottom = document.getElementById('controls-bottom');
     if (gameInfo) gameInfo.classList.remove('hidden');
     if (tableroContainer) tableroContainer.classList.remove('hidden');
     if (controlsBottom) controlsBottom.classList.remove('hidden');
+
+    const estado = document.getElementById('estado-juego');
+
+    try {
+        if (typeof Juego === 'undefined' || !Juego || typeof Juego.iniciarJuego !== 'function') {
+            if (estado) estado.textContent = 'Error: `Juego` no está cargado.';
+            console.error('Juego no cargado o iniciarJuego no es función');
+            return;
+        }
+
+        // Diagnóstico rápido de script exportados (sin depender de consola).
+        if (typeof window === 'undefined' || typeof window.Renderer === 'undefined') {
+            if (estado) {
+                const diag = window?.__RENDERER_DEFINED__;
+                const ran = window?.__RENDERER_SCRIPT_RAN__;
+                const onload = window?.__RENDERER_ONLOAD__;
+                const onerror = window?.__RENDERER_ONERROR__;
+                estado.textContent = `Error: \`window.Renderer\` no está definido. Renderer ran: ${ran} | marcador renderer: ${diag} | onload=${onload} | onerror=${onerror}`;
+            }
+            console.error('window.Renderer no definido');
+            return;
+        }
+
+        if (estado) estado.textContent = 'Iniciando...';
+        Juego.iniciarJuego();
+    } catch (e) {
+        console.error(e);
+        if (estado) estado.textContent = `Error al iniciar: ${e?.message || e}`;
+        return;
+    }
 
     const btnTogglePausa = document.getElementById('btn-toggle-pausa');
     if (btnTogglePausa) {
